@@ -1,0 +1,10 @@
+{
+  "name": "pico-de-cli-devcontainer",
+  "build": { "dockerfile": "Dockerfile" },
+  "workspaceFolder": "/pico-de-cli",
+  "remoteUser": "chef",
+  "mounts": [
+    "source=${localWorkspaceFolder},target=/pico-de-cli,type=bind"
+  ],
+  "postCreateCommand": "if [ ! -f package.json ]; then bun init -y; fi && bun install || true"
+}
