@@ -1,10 +1,9 @@
 {
   "name": "pico-de-cli-devcontainer",
-  "build": { "dockerfile": "Dockerfile" },
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
   "workspaceFolder": "/pico-de-cli",
   "remoteUser": "chef",
-  "mounts": [
-    "source=${localWorkspaceFolder},target=/pico-de-cli,type=bind"
-  ],
-  "postCreateCommand": "if [ ! -f package.json ]; then bun init -y; fi && bun install || true"
+  "postCreateCommand": "if [ ! -f package.json ]; then bun init -y; fi && bun install || true",
+  "postStartCommand": "sh -c 'curl -s -X POST http://ollama:11434/api/pull -H \"Content-Type: application/json\" -d \"{\\\"name\\\": \\\"${OLLAMA_MODEL:-qwen2.5:3b}\\\"}\"'"
 }

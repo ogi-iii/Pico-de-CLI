@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    environment:
+      # Use $OLLAMA_MODEL from environment or fall back to qwen2.5:3b as default
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen2.5:3b}
+    # Mount workspace directory to container.
+    # The `:cached` flag relaxes consistency guarantees to significantly boost file I/O performance on macOS/Windows.
+    volumes:
+      - ..:/pico-de-cli:cached
+    # Keep the container running in the background for Dev Containers attachment
+    command: sleep infinity
+    # Ensure Ollama service starts before the app container
+    depends_on:
+      - ollama
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: pico-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      # Persist Ollama model weights in a named volume across devcontainer rebuilds
+      - ollama-data:/root/.ollama
+    # Uncomment below to enable GPU acceleration for Ollama
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+volumes:
+  ollama-data:
