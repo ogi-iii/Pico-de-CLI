@@ -2,6 +2,12 @@
 
 A lightweight CLI agent blending cloud & local LLMs with custom tools.
 
+<p align="center">
+  <img src="assets/pico-de-cli-mascot.png" alt="Pico-de-CLI Mascot" width="600" />
+  <br />
+  <sub><i>Mascot illustration generated using Google Gemini.</i></sub>
+</p>
+
 > **Concept**  
 > Like *Pico de Gallo*, finely chopping and blending various LLMs (Cloud & Local) and tools into a single, sharp CLI experience.
 
