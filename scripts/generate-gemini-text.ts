@@ -6,7 +6,7 @@ const messages: Message[] = [
 	{ role: "user", content: "AI エージェントとは何ですか？" },
 ];
 
-const google = createGoogle();
+const google = createGoogle({ apiKey: process.env.GEMINI_API_KEY as string });
 const result = await generateText({
 	model: google(process.env.GEMINI_MODEL as string),
 	messages,
