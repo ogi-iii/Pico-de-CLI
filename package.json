@@ -12,5 +12,9 @@
 	},
 	"dependencies": {
 		"@google/genai": "^2.15.0"
+	},
+	"scripts": {
+		"check": "biome check .",
+		"check:fix": "biome check --write ."
 	}
 }
