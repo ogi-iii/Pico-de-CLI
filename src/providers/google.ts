@@ -1,90 +1,92 @@
-import { type ContentListUnion, GoogleGenAI, type Part } from "@google/genai";
+import { type Content, GoogleGenAI, type Part } from "@google/genai";
 import type {
 	ApiError,
+	AssistantMessage,
+	FinishReason,
 	GenerateParams,
 	GenerateTextResult,
 	LanguageModel,
 	Message,
 	Provider,
 	ToolCall,
+	ToolMessage,
+	UserMessage,
 } from "../types";
 import { LLMApiError } from "../types";
+
+const convertToolMessage = (m: ToolMessage) => ({
+	role: "user" as const,
+	parts: [
+		{
+			functionResponse: {
+				name: m.name,
+				response: { result: m.content },
+			},
+		},
+	],
+});
+
+const convertAssistantMessage = (m: AssistantMessage) => ({
+	role: "model" as const,
+	parts: [
+		...(m.content ? [{ text: m.content }] : []),
+		...(m.toolCalls?.map((tc) => ({
+			functionCall: {
+				name: tc.name,
+				args: tc.args,
+			},
+		})) ?? []),
+	],
+});
+
+const convertUserMessage = (m: UserMessage) => ({
+	role: "user" as const,
+	parts: [{ text: m.content }],
+});
+
+type MessageConverters = {
+	tool: (m: ToolMessage) => Content;
+	assistant: (m: AssistantMessage) => Content;
+	user: (m: UserMessage) => Content;
+};
+
+const messageConverters: MessageConverters = {
+	tool: convertToolMessage,
+	assistant: convertAssistantMessage,
+	user: convertUserMessage,
+};
+
+function convertMessages(messages: Message[]): Content[] {
+	return messages
+		.filter((m) => m.role !== "system")
+		.map((m) => {
+			const convert = messageConverters[m.role as keyof MessageConverters];
+			return convert(m as never);
+		});
+}
+
+const finishReasonMap: Record<string, FinishReason> = {
+	stop: "stop",
+	max_tokens: "length",
+	safety: "content_filter",
+};
+
+function mapFinishReason(reason: string | undefined): FinishReason {
+	return finishReasonMap[reason?.toLowerCase() ?? ""] ?? "stop";
+}
 
 export function createGoogle(config?: { apiKey?: string }): Provider {
 	const client = new GoogleGenAI({
 		apiKey: config?.apiKey,
 	});
 
-	function convertMessages(messages: Message[]): ContentListUnion {
-		return messages
-			.filter((m) => m.role !== "system")
-			.map((m) => {
-				if (m.role === "tool") {
-					return {
-						role: "user" as const,
-						parts: [
-							{
-								functionResponse: {
-									name: m.name,
-									response: { result: m.content },
-								},
-							},
-						],
-					};
-				}
-				if (m.role === "assistant" && m.toolCalls) {
-					const parts: Part[] = [];
-					if (m.content) {
-						parts.push({ text: m.content });
-					}
-					for (const tc of m.toolCalls) {
-						parts.push({
-							functionCall: {
-								name: tc.name,
-								args: tc.args,
-							},
-						});
-					}
-					return {
-						role: "model" as const,
-						parts,
-					};
-				}
-				const role = m.role === "assistant" ? "model" : "user";
-				return {
-					role: role as "user" | "model",
-					parts: [
-						{
-							text: m.content,
-						},
-					],
-				};
-			});
-	}
-
-	function mapFinishReason(
-		reason: string | undefined,
-		hasFunctionCall: boolean,
-	): GenerateTextResult["finishReason"] {
-		if (hasFunctionCall) return "tool_calls";
-		switch (reason?.toUpperCase()) {
-			case "STOP":
-				return "stop";
-			case "MAX_TOKENS":
-				return "length";
-			case "SAFETY":
-				return "content_filter";
-			default:
-				return "stop";
-		}
-	}
-
 	return (modelId: string): LanguageModel => ({
 		async doGenerate(params: GenerateParams): Promise<GenerateTextResult> {
-			const systemInstruction = params.messages
-				.filter((m) => m.role === "system")
-				.map((m) => m.content)
-				.join("\n");
+			const systemInstruction =
+				params.messages
+					.filter((m) => m.role === "system")
+					.map((m) => m.content)
+					.join("\n") || undefined;
 
 			const tools = params.tools?.length
 				? [
@@ -113,26 +115,21 @@ export function createGoogle(config?: { apiKey?: string }): Provider {
 				const candidate = response.candidates?.[0];
 				const parts = candidate?.content?.parts ?? [];
 
-				const text = parts
-					.filter((p: Part) => p.text)
-					.map((p: Part) => p.text)
-					.join("");
+				const text = parts.map((p: Part) => p.text ?? "").join("");
 				const functionCallParts = parts.filter((p: Part) => p.functionCall);
-				const toolCalls: ToolCall[] | undefined =
-					functionCallParts.length > 0
-						? functionCallParts.map((p: Part, i: number) => ({
-								toolCallId: `call_${i}`,
-								name: p.functionCall?.name as string,
-								args: p.functionCall?.args as Record<string, unknown>,
-							}))
-						: undefined;
+				const toolCalls: ToolCall[] | undefined = functionCallParts.length
+					? functionCallParts.map((p: Part, i: number) => ({
+							toolCallId: `call_${i}`,
+							name: p.functionCall?.name ?? "",
+							args: (p.functionCall?.args as Record<string, unknown>) ?? {},
+						}))
+					: undefined;
 
 				return {
 					text,
-					finishReason: mapFinishReason(
-						candidate?.finishReason,
-						functionCallParts.length > 0,
-					),
+					finishReason: toolCalls?.length
+						? "tool_calls"
+						: mapFinishReason(candidate?.finishReason),
 					toolCalls,
 					usage: {
 						promptTokens: response.usageMetadata?.promptTokenCount,

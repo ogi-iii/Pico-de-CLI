@@ -16,22 +16,34 @@ export type ToolResult = {
 	result: string;
 };
 
+export type UserMessage = {
+	role: "user";
+	content: string;
+};
+
+export type SystemMessage = {
+	role: "system";
+	content: string;
+};
+
+export type AssistantMessage = {
+	role: "assistant";
+	content: string;
+	toolCalls?: ToolCall[];
+};
+
+export type ToolMessage = {
+	role: "tool";
+	toolCallId: string;
+	name: string;
+	content: string;
+};
+
 export type Message =
-	| {
-			role: "user" | "system";
-			content: string;
-	  }
-	| {
-			role: "assistant";
-			content: string;
-			toolCalls?: ToolCall[];
-	  }
-	| {
-			role: "tool";
-			toolCallId: string;
-			name: string;
-			content: string;
-	  };
+	| UserMessage
+	| SystemMessage
+	| AssistantMessage
+	| ToolMessage;
 
 export type GenerateParams = {
 	messages: Message[];
@@ -47,9 +59,16 @@ export type Usage = {
 	totalTokens?: number;
 };
 
+export type FinishReason =
+	| "stop"
+	| "length"
+	| "content_filter"
+	| "tool_calls"
+	| "error";
+
 export type GenerateTextResult = {
 	text: string;
-	finishReason: "stop" | "length" | "content_filter" | "tool_calls" | "error";
+	finishReason: FinishReason;
 	toolCalls?: ToolCall[];
 	usage?: Usage;
 };
