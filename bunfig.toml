@@ -1,0 +1,4 @@
+[test]
+coverage = true
+coverageDirectory = "coverage"
+coverageReporter = ["text", "lcov"]
