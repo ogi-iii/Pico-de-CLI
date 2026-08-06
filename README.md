@@ -1,5 +1,8 @@
 # Pico-de-CLI
 
+[![Test and Coverage](https://github.com/ogi-iii/Pico-de-CLI/actions/workflows/coveralls.yml/badge.svg)](https://github.com/ogi-iii/Pico-de-CLI/actions/workflows/coveralls.yml)
+[![Coverage Status](https://coveralls.io/repos/github/ogi-iii/Pico-de-CLI/badge.svg?branch=main)](https://coveralls.io/github/ogi-iii/Pico-de-CLI?branch=main)
+
 A lightweight CLI agent blending cloud & local LLMs with custom tools.
 
 <p align="center">
