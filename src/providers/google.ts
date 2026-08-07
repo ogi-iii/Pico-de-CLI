@@ -40,7 +40,7 @@ const convertAssistantMessage = (m: AssistantMessage) => ({
 });
 
 const convertUserMessage = (m: UserMessage) => ({
-	role: "user" as const,
+	role: m.role,
 	parts: [{ text: m.content }],
 });
 
@@ -54,14 +54,14 @@ const messageConverters: MessageConverters = {
 	tool: convertToolMessage,
 	assistant: convertAssistantMessage,
 	user: convertUserMessage,
-};
+} as const;
 
 function convertMessages(messages: Message[]): Content[] {
 	return messages
 		.filter((m) => m.role !== "system")
 		.map((m) => {
-			const convert = messageConverters[m.role as keyof MessageConverters];
-			return convert(m as never);
+			const converter = messageConverters[m.role] as (m: Message) => Content;
+			return converter(m);
 		});
 }
 
