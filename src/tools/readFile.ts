@@ -1,11 +1,9 @@
 import type { Stats } from "node:fs";
-import { readFile as fsReadFile, realpath, stat } from "node:fs/promises";
-import { resolve, sep } from "node:path";
-
-const WORKSPACE_ROOT = resolve(process.cwd(), "./workspace");
-const ALLOWED_PREFIX = WORKSPACE_ROOT + sep;
-const MAX_FILE_SIZE = 100 * 1024; // 100KB
-const ENCODING = "utf-8";
+import { readFile as fsReadFile, stat } from "node:fs/promises";
+import { resolve } from "node:path";
+import { ENCODING, MAX_FILE_SIZE, WORKSPACE_ROOT } from "./common/constants";
+import { handleNotFoundError } from "./common/error-handler";
+import { validateRealPath, validateWorkspacePath } from "./common/validators";
 
 async function readFileExecute(args: { path: string }): Promise<string> {
 	const absolutePath = resolve(WORKSPACE_ROOT, args.path);
@@ -21,41 +19,6 @@ async function validate(
 	const realPath = await validateRealPath(filePath, displayPath);
 	await validateFileStats(realPath, displayPath);
 	return realPath;
-}
-
-function validateWorkspacePath(filePath: string, errorMessage?: string): void {
-	if (!filePath.startsWith(ALLOWED_PREFIX) && filePath !== WORKSPACE_ROOT) {
-		const message = errorMessage || `'${filePath}' is out of the workspace.`;
-		throw new Error(`Access denied: ${message}`);
-	}
-}
-
-async function validateRealPath(
-	filePath: string,
-	displayPath: string,
-): Promise<string> {
-	let realPath: string;
-	try {
-		realPath = await realpath(filePath);
-	} catch (error) {
-		handleNotFoundError(error, displayPath);
-	}
-	validateWorkspacePath(
-		realPath,
-		`'${displayPath}' refers to a location outside the workspace via a symbolic link.`,
-	);
-	return realPath;
-}
-
-function isNodeError(error: unknown): error is NodeJS.ErrnoException {
-	return error instanceof Error && "code" in error;
-}
-
-function handleNotFoundError(error: unknown, displayPath: string): never {
-	if (isNodeError(error) && error.code === "ENOENT") {
-		throw new Error(`File not found: ${displayPath}`);
-	}
-	throw error;
 }
 
 async function validateFileStats(
