@@ -5,12 +5,6 @@ import { ENCODING, MAX_FILE_SIZE, WORKSPACE_ROOT } from "./common/constants";
 import { handleNotFoundError } from "./common/error-handler";
 import { validateRealPath, validateWorkspacePath } from "./common/validators";
 
-async function readFileExecute(args: { path: string }): Promise<string> {
-	const absolutePath = resolve(WORKSPACE_ROOT, args.path);
-	const realPath = await validate(absolutePath, args.path);
-	return await fsReadFile(realPath, ENCODING);
-}
-
 async function validate(
 	filePath: string,
 	displayPath: string,
@@ -40,6 +34,12 @@ async function validateFileStats(
 				`Only a file of ${MAX_FILE_SIZE / 1024} KB or less can be loaded.`,
 		);
 	}
+}
+
+async function readFileExecute(args: { path: string }): Promise<string> {
+	const absolutePath = resolve(WORKSPACE_ROOT, args.path);
+	const realPath = await validate(absolutePath, args.path);
+	return await fsReadFile(realPath, ENCODING);
 }
 
 export const readFile = {
