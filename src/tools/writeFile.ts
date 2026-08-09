@@ -41,7 +41,7 @@ async function writeFileExecute(args: {
 
 	await fsWriteFile(absolutePath, args.content, ENCODING);
 
-	return `The file has been written: '${args.path}'`;
+	return `The file has been successfully written: '${args.path}'`;
 }
 
 export const writeFile = {

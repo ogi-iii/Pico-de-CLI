@@ -68,7 +68,9 @@ describe("writeFile", () => {
 			expect(existsSync(fullPath)).toBe(true);
 			const savedContent = await readFile(fullPath, ENCODING);
 			expect(savedContent).toBe(content);
-			expect(result).toBe(`The file has been written: '${relPath}'`);
+			expect(result).toBe(
+				`The file has been successfully written: '${relPath}'`,
+			);
 		});
 
 		it("should overwrite an existing file", async () => {
@@ -85,7 +87,9 @@ describe("writeFile", () => {
 			const fullPath = resolve(WORKSPACE_ROOT, relPath);
 			const savedContent = await readFile(fullPath, ENCODING);
 			expect(savedContent).toBe(newContent);
-			expect(result).toBe(`The file has been written: '${relPath}'`);
+			expect(result).toBe(
+				`The file has been successfully written: '${relPath}'`,
+			);
 		});
 
 		it("should traverse parent directories while handling 'File not found' errors", async () => {
@@ -106,7 +110,9 @@ describe("writeFile", () => {
 			const result = await writeFile.execute({ path: relPath, content });
 
 			expect(validateRealPathSpy).toHaveBeenCalled();
-			expect(result).toBe(`The file has been written: '${relPath}'`);
+			expect(result).toBe(
+				`The file has been successfully written: '${relPath}'`,
+			);
 
 			validateRealPathSpy.mockRestore();
 		});
