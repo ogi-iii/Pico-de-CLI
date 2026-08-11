@@ -63,4 +63,5 @@ export const writeFile = {
 		required: ["path", "content"],
 	},
 	execute: writeFileExecute,
+	needsApproval: true,
 };

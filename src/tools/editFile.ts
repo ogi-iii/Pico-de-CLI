@@ -75,4 +75,5 @@ export const editFile = {
 		required: ["path", "oldText", "newText"],
 	},
 	execute: editFileExecute,
+	needsApproval: true,
 };

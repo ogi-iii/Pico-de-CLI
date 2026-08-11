@@ -59,4 +59,5 @@ export const readFile = {
 		required: ["path"],
 	},
 	execute: readFileExecute,
+	needsApproval: false,
 };
