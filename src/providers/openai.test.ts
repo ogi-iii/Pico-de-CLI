@@ -4,7 +4,6 @@ import { createOpenAI } from "./openai";
 
 const mockCreate = mock();
 
-// openai SDK のモック設定
 mock.module("openai", () => {
 	return {
 		default: class OpenAI {
@@ -37,7 +36,6 @@ describe("createOpenAI", () => {
 			},
 		});
 
-		// baseURL の末尾に /chat/completions が入っている場合に自動除去されるかも検証
 		const openai = createOpenAI({
 			apiKey: "test-key",
 			baseURL: "http://localhost:11434/v1/chat/completions/",
@@ -139,7 +137,7 @@ describe("createOpenAI", () => {
 							},
 							{
 								id: "call_ignore",
-								type: "custom_type", // tc.type === "function" 以外のフィルタリング検証
+								type: "custom_type",
 								function: {
 									name: "ignoreMe",
 									arguments: "{}",
