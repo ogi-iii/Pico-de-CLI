@@ -14,7 +14,7 @@ const ollama = createOpenAI({
 const result = await generateText({
 	model: ollama(process.env.QWEN_MODEL as string),
 	messages,
-	tools: allTools,
+	tools: Object.values(allTools),
 });
 
 console.log(`Qwen ganerated text: ${result.text}`);

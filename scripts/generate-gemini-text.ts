@@ -11,7 +11,7 @@ const google = createGoogle({ apiKey: process.env.GEMINI_API_KEY as string });
 const result = await generateText({
 	model: google(process.env.GEMINI_MODEL as string),
 	messages,
-	tools: allTools,
+	tools: Object.values(allTools),
 });
 
 console.log(`Gemini ganerated text: ${result.text}`);
