@@ -1,5 +1,6 @@
-import { resolve } from "node:path";
+import { resolve as pathResolve, sep } from "node:path";
 
-export const WORKSPACE_ROOT = resolve(process.cwd(), "./workspace");
-export const MAX_FILE_SIZE = 100 * 1024; // 100KB
+export const WORKSPACE_ROOT = pathResolve(process.cwd(), "./workspace");
+export const ALLOWED_PREFIX = WORKSPACE_ROOT + sep;
+export const MAX_FILE_SIZE = 100 * 1024; // 100 KB
 export const ENCODING = "utf-8";

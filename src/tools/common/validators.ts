@@ -1,9 +1,6 @@
 import { realpath } from "node:fs/promises";
-import { sep } from "node:path";
-import { WORKSPACE_ROOT } from "./constants";
+import { ALLOWED_PREFIX, WORKSPACE_ROOT } from "./constants";
 import { handleNotFoundError } from "./error-handler";
-
-const ALLOWED_PREFIX = WORKSPACE_ROOT + sep;
 
 export function validateWorkspacePath(
 	filePath: string,
