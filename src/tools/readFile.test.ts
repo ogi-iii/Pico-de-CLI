@@ -1,13 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 import * as fs from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { join, resolve as pathResolve } from "node:path";
 import { readFile } from "./readFile";
 
-const TEST_WORKSPACE_DIR = resolve(
+const TEST_WORKSPACE_DIR = pathResolve(
 	process.cwd(),
 	"./workspace/__temp__/bun/test",
 );
-const TEMP_WORKSPACE_DIR = resolve(process.cwd(), "./workspace/__temp__");
+const TEMP_WORKSPACE_DIR = pathResolve(process.cwd(), "./workspace/__temp__");
 
 describe("readFile tool", () => {
 	beforeEach(async () => {
@@ -55,7 +55,7 @@ describe("readFile tool", () => {
 		});
 
 		it("should throw an error when given an absolute path outside the workspace", async () => {
-			const outsidePath = resolve(process.cwd(), "outside.txt");
+			const outsidePath = pathResolve(process.cwd(), "outside.txt");
 			await expect(readFile.execute({ path: outsidePath })).rejects.toThrow(
 				`Access denied: '${outsidePath}' is out of the workspace.`,
 			);
@@ -64,7 +64,7 @@ describe("readFile tool", () => {
 
 	describe("Symbolic link validation", () => {
 		it("should throw an error if a symlink targets a file outside the workspace", async () => {
-			const outsideFile = resolve(process.cwd(), "outside_dummy.txt");
+			const outsideFile = pathResolve(process.cwd(), "outside_dummy.txt");
 			await fs.writeFile(outsideFile, "secret data", "utf-8");
 
 			const symlinkPath = join(TEST_WORKSPACE_DIR, "symlink_to_outside.txt");

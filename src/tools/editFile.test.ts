@@ -11,16 +11,16 @@ import {
 } from "bun:test";
 import { existsSync } from "node:fs";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { resolve as pathResolve } from "node:path";
 import { ENCODING, WORKSPACE_ROOT } from "./common/constants";
 import * as validators from "./common/validators";
 import { editFile } from "./editFile";
 
-const TEST_WORKSPACE_DIR = resolve(
+const TEST_WORKSPACE_DIR = pathResolve(
 	process.cwd(),
 	"./workspace/__temp__/bun/test",
 );
-const TEMP_WORKSPACE_DIR = resolve(process.cwd(), "./workspace/__temp__");
+const TEMP_WORKSPACE_DIR = pathResolve(process.cwd(), "./workspace/__temp__");
 
 async function cleanupTestDir() {
 	if (existsSync(TEMP_WORKSPACE_DIR)) {
@@ -63,7 +63,7 @@ describe("editFile", () => {
 	describe("execute (editFileExecute)", () => {
 		it("should replace text successfully when target text is found exactly once (short text)", async () => {
 			const relPath = "__temp__/bun/test/test.txt";
-			const fullPath = resolve(WORKSPACE_ROOT, relPath);
+			const fullPath = pathResolve(WORKSPACE_ROOT, relPath);
 			const oldText = "hello,";
 			const newText = "world,";
 
@@ -84,7 +84,7 @@ describe("editFile", () => {
 
 		it("should replace text successfully when target text is longer than 30 characters", async () => {
 			const relPath = "__temp__/bun/test/test.txt";
-			const fullPath = resolve(WORKSPACE_ROOT, relPath);
+			const fullPath = pathResolve(WORKSPACE_ROOT, relPath);
 			const oldText = "a".repeat(40);
 			const newText = "b".repeat(40);
 			const content = `${oldText} existing text`;
@@ -106,7 +106,7 @@ describe("editFile", () => {
 
 		it("should throw text not found error when target text is missing (short oldText)", async () => {
 			const relPath = "__temp__/bun/test/test.txt";
-			const fullPath = resolve(WORKSPACE_ROOT, relPath);
+			const fullPath = pathResolve(WORKSPACE_ROOT, relPath);
 			const oldText = "missing";
 
 			await writeFile(fullPath, "some other content", ENCODING);
@@ -124,7 +124,7 @@ describe("editFile", () => {
 
 		it("should throw text not found error with truncated preview when target text exceeds 50 characters", async () => {
 			const relPath = "__temp__/bun/test/test.txt";
-			const fullPath = resolve(WORKSPACE_ROOT, relPath);
+			const fullPath = pathResolve(WORKSPACE_ROOT, relPath);
 			const oldText = "x".repeat(60);
 
 			await writeFile(fullPath, "some other content", ENCODING);
@@ -143,7 +143,7 @@ describe("editFile", () => {
 
 		it("should throw text multiply found error when target text occurs more than once", async () => {
 			const relPath = "__temp__/bun/test/test.txt";
-			const fullPath = resolve(WORKSPACE_ROOT, relPath);
+			const fullPath = pathResolve(WORKSPACE_ROOT, relPath);
 			const oldText = "duplicate";
 
 			await writeFile(fullPath, "duplicate and duplicate", ENCODING);
@@ -173,7 +173,7 @@ describe("editFile", () => {
 
 		it("should trigger validator functions during execution", async () => {
 			const relPath = "__temp__/bun/test/test.txt";
-			const fullPath = resolve(WORKSPACE_ROOT, relPath);
+			const fullPath = pathResolve(WORKSPACE_ROOT, relPath);
 			await writeFile(fullPath, "valid content", ENCODING);
 
 			const validateWorkspacePathSpy = spyOn(

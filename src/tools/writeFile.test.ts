@@ -11,16 +11,16 @@ import {
 } from "bun:test";
 import { existsSync } from "node:fs";
 import { mkdir, readFile, rm } from "node:fs/promises";
-import { resolve } from "node:path";
+import { resolve as pathResolve } from "node:path";
 import { ENCODING, WORKSPACE_ROOT } from "./common/constants";
 import * as validators from "./common/validators";
 import { writeFile } from "./writeFile";
 
-const TEST_WORKSPACE_DIR = resolve(
+const TEST_WORKSPACE_DIR = pathResolve(
 	process.cwd(),
 	"./workspace/__temp__/bun/test",
 );
-const TEMP_WORKSPACE_DIR = resolve(process.cwd(), "./workspace/__temp__");
+const TEMP_WORKSPACE_DIR = pathResolve(process.cwd(), "./workspace/__temp__");
 
 async function cleanupTestDir() {
 	if (existsSync(TEMP_WORKSPACE_DIR)) {
@@ -64,7 +64,7 @@ describe("writeFile", () => {
 
 			const result = await writeFile.execute({ path: relPath, content });
 
-			const fullPath = resolve(WORKSPACE_ROOT, relPath);
+			const fullPath = pathResolve(WORKSPACE_ROOT, relPath);
 			expect(existsSync(fullPath)).toBe(true);
 			const savedContent = await readFile(fullPath, ENCODING);
 			expect(savedContent).toBe(content);
@@ -84,7 +84,7 @@ describe("writeFile", () => {
 				content: newContent,
 			});
 
-			const fullPath = resolve(WORKSPACE_ROOT, relPath);
+			const fullPath = pathResolve(WORKSPACE_ROOT, relPath);
 			const savedContent = await readFile(fullPath, ENCODING);
 			expect(savedContent).toBe(newContent);
 			expect(result).toBe(
