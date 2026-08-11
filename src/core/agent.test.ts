@@ -77,7 +77,6 @@ describe("Agent Class Coverage Tests", () => {
 		});
 	});
 
-	// private化に伴い、generate() 経由での振る舞いテストに統合
 	describe("tool execution via generate()", () => {
 		it("should handle missing tool error", async () => {
 			generateTextSpy
@@ -97,7 +96,6 @@ describe("Agent Class Coverage Tests", () => {
 
 			await agent.generate("Run missing tool");
 
-			// 2回目の generateText 呼び出し時、LLMに返されたツールエラーメッセージを確認
 			const secondCallMessages = generateTextSpy.mock.calls[1][0].messages;
 			const toolMsg = secondCallMessages.find(
 				(m: Message) => m.role === "tool",
