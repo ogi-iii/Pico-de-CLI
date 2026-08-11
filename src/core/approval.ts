@@ -2,7 +2,7 @@ import { createInterface } from "node:readline";
 
 export async function requestApproval(
 	toolName: string,
-	toolArgs: unknown,
+	toolArgs: Record<string, unknown>,
 ): Promise<boolean> {
 	return new Promise((resolve) => {
 		const readline = createInterface({

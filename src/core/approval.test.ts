@@ -55,7 +55,7 @@ describe("requestApproval", () => {
 			},
 		);
 
-		const result = await requestApproval("testTool", null);
+		const result = await requestApproval("testTool", { key: "value" });
 
 		expect(result).toBe(true);
 		expect(mockRl.close).toHaveBeenCalledTimes(1);
