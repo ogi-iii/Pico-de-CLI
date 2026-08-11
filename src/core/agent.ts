@@ -58,7 +58,7 @@ export class Agent {
 		}
 	}
 
-	async handleToolCalls(
+	private async handleToolCalls(
 		response: GenerateTextResult,
 	): Promise<{ toolCallMessages: Message[]; toolCallCounts: number }> {
 		const toolCallMessages: Message[] = [];

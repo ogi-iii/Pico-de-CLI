@@ -7,7 +7,13 @@ import {
 	mock,
 	spyOn,
 } from "bun:test";
-import type { FinishReason, LanguageModel, Tool } from "../types";
+import type {
+	FinishReason,
+	LanguageModel,
+	Message,
+	Tool,
+	ToolMessage,
+} from "../types";
 import { Agent } from "./agent";
 import * as approvalModule from "./approval";
 import * as generateTextModule from "./generate-text";
@@ -23,7 +29,6 @@ describe("Agent Class Coverage Tests", () => {
 		consoleLogMock = spyOn(console, "log").mockImplementation(() => {});
 		consoleWarnMock = spyOn(console, "warn").mockImplementation(() => {});
 
-		// mock.module ではなく spyOn を使用して関数を差し替える
 		generateTextSpy = spyOn(
 			generateTextModule,
 			"generateText",
@@ -72,8 +77,17 @@ describe("Agent Class Coverage Tests", () => {
 		});
 	});
 
-	describe("handleToolCalls (including executeTool)", () => {
+	// private化に伴い、generate() 経由での振る舞いテストに統合
+	describe("tool execution via generate()", () => {
 		it("should handle missing tool error", async () => {
+			generateTextSpy
+				.mockResolvedValueOnce({
+					text: "Calling unknown tool",
+					finishReason: "tool_calls",
+					toolCalls: [{ name: "unknown_tool", toolCallId: "call_1", args: {} }],
+				})
+				.mockResolvedValueOnce({ text: "Recovered", finishReason: "stop" });
+
 			const agent = new Agent({
 				name: "TestAgent",
 				instructions: "",
@@ -81,15 +95,15 @@ describe("Agent Class Coverage Tests", () => {
 				tools: {},
 			});
 
-			const response = {
-				text: "Calling tool",
-				finishReason: "tool_calls" as FinishReason,
-				toolCalls: [{ name: "unknown_tool", toolCallId: "call_1", args: {} }],
-			};
+			await agent.generate("Run missing tool");
 
-			const result = await agent.handleToolCalls(response);
-			expect(result.toolCallCounts).toBe(0);
-			expect(result.toolCallMessages[1]?.content).toBe(
+			// 2回目の generateText 呼び出し時、LLMに返されたツールエラーメッセージを確認
+			const secondCallMessages = generateTextSpy.mock.calls[1][0].messages;
+			const toolMsg = secondCallMessages.find(
+				(m: Message) => m.role === "tool",
+			) as ToolMessage;
+
+			expect(toolMsg?.content).toBe(
 				"An error occurred before the tool was called: Tool 'unknown_tool' not found.",
 			);
 		});
@@ -102,6 +116,16 @@ describe("Agent Class Coverage Tests", () => {
 				execute: mock().mockResolvedValue("Tool execution success!"),
 			};
 
+			generateTextSpy
+				.mockResolvedValueOnce({
+					text: "",
+					finishReason: "tool_calls",
+					toolCalls: [
+						{ name: "dummy_tool", toolCallId: "call_2", args: { a: 1 } },
+					],
+				})
+				.mockResolvedValueOnce({ text: "Done", finishReason: "stop" });
+
 			const agent = new Agent({
 				name: "TestAgent",
 				instructions: "",
@@ -110,19 +134,14 @@ describe("Agent Class Coverage Tests", () => {
 				verbose: true,
 			});
 
-			const response = {
-				text: "",
-				finishReason: "tool_calls" as FinishReason,
-				toolCalls: [
-					{ name: "dummy_tool", toolCallId: "call_2", args: { a: 1 } },
-				],
-			};
+			await agent.generate("Run dummy tool");
 
-			const result = await agent.handleToolCalls(response);
-			expect(result.toolCallCounts).toBe(1);
-			expect(result.toolCallMessages[1]?.content).toBe(
-				"Tool execution success!",
-			);
+			const secondCallMessages = generateTextSpy.mock.calls[1][0].messages;
+			const toolMsg = secondCallMessages.find(
+				(m: Message) => m.role === "tool",
+			) as ToolMessage;
+
+			expect(toolMsg?.content).toBe("Tool execution success!");
 			expect(consoleLogMock).toHaveBeenCalledWith(
 				'Tool execution: dummy_tool ({"a":1})',
 			);
@@ -139,6 +158,14 @@ describe("Agent Class Coverage Tests", () => {
 				execute: mock().mockRejectedValue(new Error("Something went wrong")),
 			};
 
+			generateTextSpy
+				.mockResolvedValueOnce({
+					text: "",
+					finishReason: "tool_calls",
+					toolCalls: [{ name: "error_tool", toolCallId: "call_3", args: {} }],
+				})
+				.mockResolvedValueOnce({ text: "Done", finishReason: "stop" });
+
 			const agent = new Agent({
 				name: "TestAgent",
 				instructions: "",
@@ -146,15 +173,14 @@ describe("Agent Class Coverage Tests", () => {
 				tools: { error_tool: errorTool },
 			});
 
-			const response = {
-				text: "",
-				finishReason: "tool_calls" as FinishReason,
-				toolCalls: [{ name: "error_tool", toolCallId: "call_3", args: {} }],
-			};
+			await agent.generate("Run error tool");
 
-			const result = await agent.handleToolCalls(response);
-			expect(result.toolCallCounts).toBe(1);
-			expect(result.toolCallMessages[1]?.content).toBe(
+			const secondCallMessages = generateTextSpy.mock.calls[1][0].messages;
+			const toolMsg = secondCallMessages.find(
+				(m: Message) => m.role === "tool",
+			) as ToolMessage;
+
+			expect(toolMsg?.content).toBe(
 				"An error occurred during the tool execution: Something went wrong",
 			);
 		});
@@ -168,6 +194,16 @@ describe("Agent Class Coverage Tests", () => {
 				execute: mock().mockResolvedValue("Will not be reached"),
 			};
 
+			generateTextSpy
+				.mockResolvedValueOnce({
+					text: "",
+					finishReason: "tool_calls",
+					toolCalls: [
+						{ name: "approval_tool", toolCallId: "call_4", args: {} },
+					],
+				})
+				.mockResolvedValueOnce({ text: "Done", finishReason: "stop" });
+
 			const agent = new Agent({
 				name: "TestAgent",
 				instructions: "",
@@ -176,15 +212,14 @@ describe("Agent Class Coverage Tests", () => {
 				approvalFunc: async () => false,
 			});
 
-			const response = {
-				text: "",
-				finishReason: "tool_calls" as FinishReason,
-				toolCalls: [{ name: "approval_tool", toolCallId: "call_4", args: {} }],
-			};
+			await agent.generate("Run approval tool");
 
-			const result = await agent.handleToolCalls(response);
-			expect(result.toolCallCounts).toBe(0);
-			expect(result.toolCallMessages[1]?.content).toBe(
+			const secondCallMessages = generateTextSpy.mock.calls[1][0].messages;
+			const toolMsg = secondCallMessages.find(
+				(m: Message) => m.role === "tool",
+			) as ToolMessage;
+
+			expect(toolMsg?.content).toBe(
 				"The tool execution was cancelled by the user: It needs to consider an alternative method.",
 			);
 		});
@@ -200,6 +235,16 @@ describe("Agent Class Coverage Tests", () => {
 				execute: mock().mockResolvedValue("Approved!"),
 			};
 
+			generateTextSpy
+				.mockResolvedValueOnce({
+					text: "",
+					finishReason: "tool_calls",
+					toolCalls: [
+						{ name: "approval_tool", toolCallId: "call_5", args: {} },
+					],
+				})
+				.mockResolvedValueOnce({ text: "Done", finishReason: "stop" });
+
 			const agent = new Agent({
 				name: "TestAgent",
 				instructions: "",
@@ -207,16 +252,15 @@ describe("Agent Class Coverage Tests", () => {
 				tools: { approval_tool: approvalTool },
 			});
 
-			const response = {
-				text: "",
-				finishReason: "tool_calls" as FinishReason,
-				toolCalls: [{ name: "approval_tool", toolCallId: "call_5", args: {} }],
-			};
+			await agent.generate("Run approval tool");
 
-			const result = await agent.handleToolCalls(response);
 			expect(requestApprovalSpy).toHaveBeenCalled();
-			expect(result.toolCallCounts).toBe(1);
-			expect(result.toolCallMessages[1]?.content).toBe("Approved!");
+			const secondCallMessages = generateTextSpy.mock.calls[1][0].messages;
+			const toolMsg = secondCallMessages.find(
+				(m: Message) => m.role === "tool",
+			) as ToolMessage;
+
+			expect(toolMsg?.content).toBe("Approved!");
 		});
 
 		it("should slice long execution results in verbose log", async () => {
@@ -228,6 +272,14 @@ describe("Agent Class Coverage Tests", () => {
 				execute: mock().mockResolvedValue(longText),
 			};
 
+			generateTextSpy
+				.mockResolvedValueOnce({
+					text: "",
+					finishReason: "tool_calls",
+					toolCalls: [{ name: "long_tool", toolCallId: "call_6", args: {} }],
+				})
+				.mockResolvedValueOnce({ text: "Done", finishReason: "stop" });
+
 			const agent = new Agent({
 				name: "TestAgent",
 				instructions: "",
@@ -236,20 +288,15 @@ describe("Agent Class Coverage Tests", () => {
 				verbose: true,
 			});
 
-			const response = {
-				text: "",
-				finishReason: "tool_calls" as FinishReason,
-				toolCalls: [{ name: "long_tool", toolCallId: "call_6", args: {} }],
-			};
+			await agent.generate("Run long tool");
 
-			await agent.handleToolCalls(response);
 			expect(consoleLogMock).toHaveBeenCalledWith(
 				`The result of tool execution: ${"A".repeat(200)}...`,
 			);
 		});
 	});
 
-	describe("generate", () => {
+	describe("generate loop", () => {
 		it("should return generated text without tool calls and issue a warning", async () => {
 			generateTextSpy.mockResolvedValueOnce({
 				text: "Final answer",
@@ -281,15 +328,16 @@ describe("Agent Class Coverage Tests", () => {
 				execute: mock().mockResolvedValue("Result from tool"),
 			};
 
-			generateTextSpy.mockResolvedValueOnce({
-				text: "Let me check",
-				finishReason: "tool_calls",
-				toolCalls: [{ name: "dummy_tool", toolCallId: "1", args: {} }],
-			});
-			generateTextSpy.mockResolvedValueOnce({
-				text: "Finished based on tool",
-				finishReason: "stop",
-			});
+			generateTextSpy
+				.mockResolvedValueOnce({
+					text: "Let me check",
+					finishReason: "tool_calls",
+					toolCalls: [{ name: "dummy_tool", toolCallId: "1", args: {} }],
+				})
+				.mockResolvedValueOnce({
+					text: "Finished based on tool",
+					finishReason: "stop",
+				});
 
 			const agent = new Agent({
 				name: "TestAgent",
