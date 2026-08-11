@@ -1,6 +1,6 @@
 import type { Stats } from "node:fs";
 import { readFile as fsReadFile, stat } from "node:fs/promises";
-import { resolve } from "node:path";
+import { resolve as pathResolve } from "node:path";
 import { ENCODING, MAX_FILE_SIZE, WORKSPACE_ROOT } from "./common/constants";
 import { handleNotFoundError } from "./common/error-handler";
 import { validateRealPath, validateWorkspacePath } from "./common/validators";
@@ -36,9 +36,10 @@ async function validateFileStats(
 	}
 }
 
-async function readFileExecute(args: { path: string }): Promise<string> {
-	const absolutePath = resolve(WORKSPACE_ROOT, args.path);
-	const realPath = await validate(absolutePath, args.path);
+async function readFileExecute(args: Record<string, unknown>): Promise<string> {
+	const { path } = args as { path: string };
+	const absolutePath = pathResolve(WORKSPACE_ROOT, path);
+	const realPath = await validate(absolutePath, path);
 	return await fsReadFile(realPath, ENCODING);
 }
 
@@ -52,7 +53,7 @@ export const readFile = {
 			path: {
 				type: "string",
 				description:
-					"Path to the file to load (ex: 'README.md', 'src/index.ts'）",
+					"Path to the file to load (e.g., 'README.md', 'src/index.ts'）",
 			},
 		},
 		required: ["path"],

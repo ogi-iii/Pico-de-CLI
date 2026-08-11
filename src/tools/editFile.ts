@@ -1,5 +1,5 @@
 import { readFile, writeFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { resolve as pathResolve } from "node:path";
 import { ENCODING, WORKSPACE_ROOT } from "./common/constants";
 import { validateRealPath, validateWorkspacePath } from "./common/validators";
 
@@ -29,25 +29,26 @@ function throwTextUnmatchedError(
 	);
 }
 
-async function editFileExecute(args: {
-	path: string;
-	oldText: string;
-	newText: string;
-}): Promise<string> {
-	const absolutePath = resolve(WORKSPACE_ROOT, args.path);
-	validate(absolutePath, args.path);
+async function editFileExecute(args: Record<string, unknown>): Promise<string> {
+	const { path, oldText, newText } = args as {
+		path: string;
+		oldText: string;
+		newText: string;
+	};
+	const absolutePath = pathResolve(WORKSPACE_ROOT, path);
+	validate(absolutePath, path);
 
 	const content = await readFile(absolutePath, ENCODING);
 
-	const matches = content.split(args.oldText).length - 1;
+	const matches = content.split(oldText).length - 1;
 	if (matches !== 1) {
-		throwTextUnmatchedError(matches, args.oldText, args.path);
+		throwTextUnmatchedError(matches, oldText, path);
 	}
 
-	const newContent = content.replace(args.oldText, args.newText);
+	const newContent = content.replace(oldText, newText);
 	await writeFile(absolutePath, newContent, ENCODING);
 
-	return `The target text in the file has been successfully replaced from '${args.oldText.slice(0, 30)}...' to '${args.newText.slice(0, 30)}...'`;
+	return `The target text in the file has been successfully replaced from '${oldText.slice(0, 30)}...' to '${newText.slice(0, 30)}...'`;
 }
 
 export const editFile = {

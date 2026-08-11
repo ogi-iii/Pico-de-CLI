@@ -1,5 +1,5 @@
 import { writeFile as fsWriteFile, mkdir } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
+import { dirname, resolve as pathResolve } from "node:path";
 import { ENCODING, WORKSPACE_ROOT } from "./common/constants";
 import { validateRealPath, validateWorkspacePath } from "./common/validators";
 
@@ -10,11 +10,11 @@ function isErrorWithMessage(error: unknown): error is NodeJS.ErrnoException {
 const isNotFoundError = (error: unknown): boolean =>
 	isErrorWithMessage(error) && error.message.includes("File not found");
 
-async function writeFileExecute(args: {
-	path: string;
-	content: string;
-}): Promise<string> {
-	const absolutePath = resolve(WORKSPACE_ROOT, args.path);
+async function writeFileExecute(
+	args: Record<string, unknown>,
+): Promise<string> {
+	const { path, content } = args as { path: string; content: string };
+	const absolutePath = pathResolve(WORKSPACE_ROOT, path);
 	validateWorkspacePath(
 		absolutePath,
 		`'${args.path}' is out of the workspace.`,
@@ -25,7 +25,7 @@ async function writeFileExecute(args: {
 	while (checkPath !== WORKSPACE_ROOT) {
 		try {
 			// Note: Non-existent target files and missing parent directories will throw a "File not found" error.
-			await validateRealPath(checkPath, args.path);
+			await validateRealPath(checkPath, path);
 			break;
 		} catch (error) {
 			if (isNotFoundError(error)) {
@@ -39,7 +39,7 @@ async function writeFileExecute(args: {
 	const dir = dirname(absolutePath);
 	await mkdir(dir, { recursive: true }); // if the directory does not exist
 
-	await fsWriteFile(absolutePath, args.content, ENCODING);
+	await fsWriteFile(absolutePath, content, ENCODING);
 
 	return `The file has been successfully written: '${args.path}'`;
 }
