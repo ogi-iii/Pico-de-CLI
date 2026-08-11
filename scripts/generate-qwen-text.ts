@@ -1,5 +1,6 @@
 import { generateText } from "../src/core/generate-text";
 import { createOpenAI } from "../src/providers/openai";
+import { allTools } from "../src/tools/allTools";
 import type { Message } from "../src/types";
 
 const messages: Message[] = [
@@ -13,6 +14,7 @@ const ollama = createOpenAI({
 const result = await generateText({
 	model: ollama(process.env.QWEN_MODEL as string),
 	messages,
+	tools: allTools,
 });
 
 console.log(`Qwen ganerated text: ${result.text}`);
