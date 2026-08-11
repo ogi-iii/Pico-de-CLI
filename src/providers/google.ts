@@ -137,7 +137,7 @@ export function createGoogle(config?: { apiKey?: string }): Provider {
 						totalTokens: response.usageMetadata?.totalTokenCount,
 					},
 				};
-			} catch (error: unknown) {
+			} catch (error) {
 				const err = error as ApiError | undefined;
 				throw new LLMApiError(
 					err?.status ?? 500,
