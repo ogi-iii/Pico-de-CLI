@@ -11,8 +11,9 @@ A lightweight CLI agent blending cloud & local LLMs with custom tools.
   <sub><i>Mascot illustration generated using Google Gemini.</i></sub>
 </p>
 
-> **Concept**  
-> Like *Pico de Gallo*, finely chopping and blending various LLMs (Cloud & Local) and tools into a single, sharp CLI experience.
+## Concept
+
+Like [*Pico de Gallo*](https://es.wikipedia.org/wiki/Pico_de_gallo), finely chopping and blending various LLMs (Cloud & Local) and tools into a single, sharp CLI experience.
 
 ## Key Features
 
@@ -46,7 +47,7 @@ Set the required environment variables for your LLM provider.
     cp .env.example .env
     ```
 
-    Example `.env` configuration:
+    Example `.env` configurations:
 
     ```bash
     QWEN_PROVIDER=ollama
@@ -92,7 +93,6 @@ bun run agent <YOUR_TASK_PROMPT> [options]
 | `--maxSteps` | `-m` | number | `30` | Maximum execution steps for the agent |
 | `--verbose` | `-v` | boolean | `false` | Enable verbose debug logging |
 | `--yolo` | `-y` | boolean | `false` | Automatically approve tool execution without asking |
----
 
 ### Examples
 
