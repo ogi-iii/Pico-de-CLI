@@ -28,6 +28,8 @@ describe("Agent Class Coverage Tests", () => {
 	beforeEach(() => {
 		consoleLogMock = spyOn(console, "log").mockImplementation(() => {});
 		consoleWarnMock = spyOn(console, "warn").mockImplementation(() => {});
+		consoleLogMock.mockClear();
+		consoleWarnMock.mockClear();
 
 		generateTextSpy = spyOn(
 			generateTextModule,
@@ -51,6 +53,7 @@ describe("Agent Class Coverage Tests", () => {
 
 	describe("constructor", () => {
 		it("should initialize with default values correctly", () => {
+			consoleLogMock.mockClear();
 			const agent = new Agent({
 				name: "DefaultAgent",
 				instructions: "System prompt",
@@ -62,6 +65,7 @@ describe("Agent Class Coverage Tests", () => {
 		});
 
 		it("should initialize with custom values and log if verbose is true", () => {
+			consoleLogMock.mockClear();
 			const agent = new Agent({
 				name: "VerboseAgent",
 				instructions: "System prompt",
@@ -107,6 +111,7 @@ describe("Agent Class Coverage Tests", () => {
 		});
 
 		it("should execute tool successfully with verbose logs", async () => {
+			consoleLogMock.mockClear();
 			const dummyTool: Tool = {
 				name: "dummy_tool",
 				description: "",
@@ -262,6 +267,7 @@ describe("Agent Class Coverage Tests", () => {
 		});
 
 		it("should slice long execution results in verbose log", async () => {
+			consoleLogMock.mockClear();
 			const longText = "A".repeat(300);
 			const longTool: Tool = {
 				name: "long_tool",
@@ -296,6 +302,9 @@ describe("Agent Class Coverage Tests", () => {
 
 	describe("generate loop", () => {
 		it("should return generated text without tool calls and issue a warning", async () => {
+			consoleLogMock.mockClear();
+			consoleWarnMock.mockClear();
+
 			generateTextSpy.mockResolvedValueOnce({
 				text: "Final answer",
 				finishReason: "stop",
@@ -350,6 +359,7 @@ describe("Agent Class Coverage Tests", () => {
 		});
 
 		it("should hit maxSteps and issue a warning", async () => {
+			consoleWarnMock.mockClear();
 			const dummyTool: Tool = {
 				name: "dummy_tool",
 				description: "",
