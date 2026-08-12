@@ -1,11 +1,8 @@
 import { writeFile as fsWriteFile, mkdir } from "node:fs/promises";
 import { dirname, resolve as pathResolve } from "node:path";
 import { ENCODING, WORKSPACE_ROOT } from "./common/constants";
+import { isErrorWithMessage } from "./common/error-handler";
 import { validateRealPath, validateWorkspacePath } from "./common/validators";
-
-function isErrorWithMessage(error: unknown): error is NodeJS.ErrnoException {
-	return error instanceof Error && "message" in error;
-}
 
 const isNotFoundError = (error: unknown): boolean =>
 	isErrorWithMessage(error) && error.message.includes("File not found");

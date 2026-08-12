@@ -1,3 +1,9 @@
+export function isErrorWithMessage(
+	error: unknown,
+): error is NodeJS.ErrnoException {
+	return error instanceof Error && "message" in error;
+}
+
 function isErrorWithCode(error: unknown): error is NodeJS.ErrnoException {
 	return error instanceof Error && "code" in error;
 }
