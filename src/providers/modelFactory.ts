@@ -44,7 +44,10 @@ const ollamaModelFactory: ModelFactory = (
 	if (apiKey && !process.env.QWEN_API_KEY) {
 		process.env.QWEN_API_KEY = apiKey;
 	}
-	const ollama = createOpenAI(); // To invoke Ollama’s OpenAI compatible API endpoint
+	const ollama = createOpenAI({
+		apiKey: process.env.QWEN_API_KEY || "ollama", // Required but unused
+		baseURL: process.env.QWEN_URL || process.env.LLM_URL, // To invoke Ollama’s OpenAI compatible API endpoint
+	});
 	return ollama(modelName);
 };
 
