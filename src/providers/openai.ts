@@ -157,7 +157,7 @@ export function createOpenAI(config?: {
 						totalTokens: completion.usage?.total_tokens,
 					},
 				};
-			} catch (error: unknown) {
+			} catch (error) {
 				const err = error as ApiError | undefined;
 				throw new LLMApiError(
 					err?.status ?? 500,
