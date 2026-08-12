@@ -25,7 +25,7 @@ function throwTextUnmatchedError(
 	}
 	// 2 or more matches
 	throw new Error(
-		`The target text multiply found in the file: Please specify more specific text (${matches} matches)`,
+		`The target text multiply found in the file: It needs to specify more specific text (${matches} matches)`,
 	);
 }
 
@@ -75,4 +75,5 @@ export const editFile = {
 		required: ["path", "oldText", "newText"],
 	},
 	execute: editFileExecute,
+	needsApproval: true,
 };

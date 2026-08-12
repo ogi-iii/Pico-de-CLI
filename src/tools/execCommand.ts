@@ -282,4 +282,5 @@ export const execCommand: Tool = {
 		required: ["command"],
 	},
 	execute: execCommandExecute,
+	needsApproval: true,
 };

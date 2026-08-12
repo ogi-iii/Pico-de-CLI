@@ -155,7 +155,7 @@ describe("editFile", () => {
 					newText: "replacement",
 				}),
 			).rejects.toThrow(
-				`The target text multiply found in the file: Please specify more specific text (2 matches)`,
+				`The target text multiply found in the file: It needs to specify more specific text (2 matches)`,
 			);
 		});
 
