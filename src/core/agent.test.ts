@@ -300,6 +300,146 @@ describe("Agent Class Coverage Tests", () => {
 		});
 	});
 
+	describe("context management (manageContext)", () => {
+		it("should skip compression if message length is less than 10", async () => {
+			generateTextSpy.mockResolvedValueOnce({
+				text: "Response",
+				finishReason: "stop",
+			});
+
+			const agent = new Agent({
+				name: "ContextAgent",
+				instructions: "System",
+				model: mockModel,
+				tools: {},
+				contextCharacterLimit: 100,
+			});
+
+			await agent.generate("Hello");
+
+			expect(consoleLogMock).not.toHaveBeenCalledWith(
+				expect.stringContaining("Compress the chat history"),
+			);
+		});
+
+		it("should omit long tool results in middleMessages when total length exceeds limit", async () => {
+			const dummyTool: Tool = {
+				name: "dummy_tool",
+				description: "",
+				parameters: {},
+				execute: mock().mockResolvedValue("A".repeat(300)),
+			};
+
+			generateTextSpy
+				.mockResolvedValueOnce({
+					text: "",
+					finishReason: "tool_calls",
+					toolCalls: [{ name: "dummy_tool", toolCallId: "1", args: {} }],
+				})
+				.mockResolvedValueOnce({
+					text: "",
+					finishReason: "tool_calls",
+					toolCalls: [{ name: "dummy_tool", toolCallId: "2", args: {} }],
+				})
+				.mockResolvedValueOnce({
+					text: "",
+					finishReason: "tool_calls",
+					toolCalls: [{ name: "dummy_tool", toolCallId: "3", args: {} }],
+				})
+				.mockResolvedValueOnce({
+					text: "",
+					finishReason: "tool_calls",
+					toolCalls: [{ name: "dummy_tool", toolCallId: "4", args: {} }],
+				})
+				.mockResolvedValueOnce({
+					text: "Final response after context compression",
+					finishReason: "stop",
+				});
+
+			const agent = new Agent({
+				name: "ContextAgent",
+				instructions: "System prompt",
+				model: mockModel,
+				tools: { dummy_tool: dummyTool },
+				contextCharacterLimit: 800,
+			});
+
+			await agent.generate("Start context test");
+
+			expect(consoleLogMock).toHaveBeenCalledWith(
+				expect.stringContaining("Compress the chat history"),
+			);
+			expect(consoleLogMock).toHaveBeenCalledWith(
+				expect.stringContaining("Successfully optimized the LLM's context."),
+			);
+
+			const finalCallMessages =
+				generateTextSpy.mock.calls[generateTextSpy.mock.calls.length - 1][0]
+					.messages;
+
+			const omittedToolMessage = finalCallMessages.find(
+				(m: Message) =>
+					m.role === "tool" &&
+					m.content.includes(
+						"The result of previous tool execution have been omitted",
+					),
+			);
+
+			expect(omittedToolMessage).toBeDefined();
+		});
+
+		it("should shift middle messages and removing associated tool messages if character limit is still exceeded", async () => {
+			const dummyTool: Tool = {
+				name: "dummy_tool",
+				description: "",
+				parameters: {},
+				execute: mock().mockResolvedValue("B".repeat(50)),
+			};
+
+			generateTextSpy
+				.mockResolvedValueOnce({
+					text: "",
+					finishReason: "tool_calls",
+					toolCalls: [{ name: "dummy_tool", toolCallId: "1", args: {} }],
+				})
+				.mockResolvedValueOnce({
+					text: "",
+					finishReason: "tool_calls",
+					toolCalls: [{ name: "dummy_tool", toolCallId: "2", args: {} }],
+				})
+				.mockResolvedValueOnce({
+					text: "",
+					finishReason: "tool_calls",
+					toolCalls: [{ name: "dummy_tool", toolCallId: "3", args: {} }],
+				})
+				.mockResolvedValueOnce({
+					text: "",
+					finishReason: "tool_calls",
+					toolCalls: [{ name: "dummy_tool", toolCallId: "4", args: {} }],
+				})
+				.mockResolvedValueOnce({
+					text: "Done",
+					finishReason: "stop",
+				});
+
+			const agent = new Agent({
+				name: "ContextAgent",
+				instructions: "Short system",
+				model: mockModel,
+				tools: { dummy_tool: dummyTool },
+				contextCharacterLimit: 120,
+			});
+
+			await agent.generate("Trigger removal");
+
+			const finalCallMessages =
+				generateTextSpy.mock.calls[generateTextSpy.mock.calls.length - 1][0]
+					.messages;
+
+			expect(finalCallMessages.length).toBeLessThan(11);
+		});
+	});
+
 	describe("generate loop", () => {
 		it("should return generated text without tool calls and issue a warning", async () => {
 			consoleLogMock.mockClear();
