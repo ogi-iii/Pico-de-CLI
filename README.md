@@ -57,7 +57,7 @@ Set the required environment variables for your LLM provider.
     QWEN_API_KEY= # no need to call Ollama's API
 
     GEMINI_PROVIDER=google
-    GEMINI_MODEL=gemini-3.6-flash
+    GEMINI_MODEL=gemini-3.5-flash-lite
     GEMINI_URL=https://generativelanguage.googleapis.com/v1beta/chat/completions
     GEMINI_API_KEY=<YOUR_API_KEY>
 
@@ -71,7 +71,7 @@ Set the required environment variables for your LLM provider.
 
     ```bash
     export LLM_PROVIDER="google"
-    export LLM_MODEL="gemini-3.6-flash"
+    export LLM_MODEL="gemini-3.5-flash-lite"
     export LLM_URL="https://generativelanguage.googleapis.com/v1beta/chat/completions"
     export LLM_API_KEY="<YOUR_API_KEY>"
     ```
