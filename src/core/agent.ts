@@ -166,7 +166,10 @@ export class Agent {
 		const initialMessages = messages.slice(0, 2); // system message with user message
 		const recentMessages = messages.slice(-4);
 		const middleMessages = messages.slice(2, -4).map((message) => {
-			if (message.role === "tool" && message.content.length > this.toolContentCharacterLimit) {
+			if (
+				message.role === "tool" &&
+				message.content.length > this.toolContentCharacterLimit
+			) {
 				return {
 					...message,
 					content: `(The result of previous tool execution have been omitted: ${message.content.length} characters)`,
