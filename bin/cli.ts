@@ -96,10 +96,10 @@ Environment Variables:
   LLM_URL                         Custom endpoint URL (optional)
 
 Examples:
-	bun run agent "Create a simple HTTP server using Bun"
-	bun run agent "Refactor src/index.ts to improve readability" --yolo
-	bun run agent "Analyze large repository log files" -c 50000 -t 500
-	bun run agent "Analyze the codebase and generate comprehensive test cases" -m 50 -v
+  bun run agent "Create a simple HTTP server using Bun"
+  bun run agent "Refactor src/index.ts to improve readability" --yolo
+  bun run agent "Analyze large repository log files" -c 50000 -t 500
+  bun run agent "Analyze the codebase and generate comprehensive test cases" -m 50 -v
 `.replace("\n", ""),
 		);
 		return;
