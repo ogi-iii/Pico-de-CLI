@@ -7,6 +7,46 @@ import { allTools } from "../src/tools/allTools";
 import { ALLOWED_PREFIX, WORKSPACE_ROOT } from "../src/tools/common/constants";
 import { isErrorWithMessage } from "../src/tools/common/error-handler";
 
+type CliErrorHandlerStrategy = {
+	canHandle: (error: unknown) => boolean;
+	handle: (
+		error: unknown,
+		maskedValue: string | undefined,
+		maskedLabel: string,
+	) => void;
+};
+
+const cliErrorHandlerStrategies: CliErrorHandlerStrategy[] = [
+	{
+		canHandle: (error) => isErrorWithMessage(error),
+		handle: (
+			error: unknown,
+			maskedValue: string | undefined,
+			maskedLabel: string,
+		) => {
+			let message = (error as Error).message;
+			if (maskedValue) {
+				message = message.split(maskedValue).join(`${maskedLabel}`);
+			}
+			console.error(`\nError: The agent unexpectedly failed.\n`);
+			console.error(`${message}`);
+		},
+	},
+	{
+		canHandle: (_error) => true,
+		handle: (
+			error: unknown,
+			_maskedValue: string | undefined,
+			_maskedLabel: string,
+		) => {
+			console.error(
+				`\nError: The agent failed with unexpected error.\n`,
+				error,
+			);
+		},
+	},
+];
+
 async function main() {
 	// ASCII Art Logo
 	console.log(
@@ -24,6 +64,8 @@ async function main() {
 		options: {
 			help: { type: "boolean", default: false, short: "h" },
 			maxSteps: { type: "string", default: "30", short: "m" },
+			contextLimit: { type: "string", default: "30000", short: "c" },
+			toolContentLimit: { type: "string", default: "200", short: "t" },
 			verbose: { type: "boolean", default: false, short: "v" },
 			yolo: { type: "boolean", default: false, short: "y" },
 		},
@@ -37,23 +79,27 @@ Usage:
   bun run agent <YOUR_TASK_PROMPT> [options]
 
 Arguments:
-  YOUR_TASK_PROMPT         The task or query prompt for the agent to execute
+  YOUR_TASK_PROMPT                The task or query prompt for the agent to execute
 
 Options:
-  -h, --help               Show this help message and exit
-  -m, --maxSteps <number>  Maximum execution steps for the agent (default: "30")
-  -v, --verbose            Enable debug logs (default: false)
-  -y, --yolo               Enable automatic tool execution approval (default: false)
+  -h, --help                      Show this help message and exit
+  -m, --maxSteps <number>         Maximum execution steps for the agent (default: "30")
+  -c, --contextLimit <number>     Character limit for overall chat context before compression (default: "30000")
+  -t, --toolContentLimit <number> Character limit for individual tool execution output in history before compression (default: "200")
+  -v, --verbose                   Enable debug logs (default: false)
+  -y, --yolo                      Enable automatic tool execution approval (default: false)
 
 Environment Variables:
-  LLM_PROVIDER             LLM provider name (required)
-  LLM_MODEL                Model name to use (required)
-  LLM_API_KEY              API key for the provider (optional)
-  LLM_URL                  Custom endpoint URL (optional)
+  LLM_PROVIDER                    LLM provider name (required)
+  LLM_MODEL                       Model name to use (required)
+  LLM_API_KEY                     API key for the provider (optional)
+  LLM_URL                         Custom endpoint URL (optional)
 
 Examples:
-  bun run agent "Refactor src/index.ts to improve readability"
-  bun run agent "Fix bugs in tests" --yolo --maxSteps 50
+	bun run agent "Create a simple HTTP server using Bun"
+	bun run agent "Refactor src/index.ts to improve readability" --yolo
+	bun run agent "Analyze large repository log files" -c 50000 -t 500
+	bun run agent "Analyze the codebase and generate comprehensive test cases" -m 50 -v
 `.replace("\n", ""),
 		);
 		return;
@@ -61,6 +107,14 @@ Examples:
 
 	const parsedMaxSteps = Number(values.maxSteps);
 	const maxSteps = Number.isNaN(parsedMaxSteps) ? 30 : parsedMaxSteps;
+	const parsedContextLimit = Number(values.contextLimit);
+	const contextLimit = Number.isNaN(parsedContextLimit)
+		? 30_000
+		: parsedContextLimit;
+	const parsedToolContentLimit = Number(values.toolContentLimit);
+	const toolContentLimit = Number.isNaN(parsedToolContentLimit)
+		? 200
+		: parsedToolContentLimit;
 	const verbose = values.verbose ?? false;
 	const yoloMode = values.yolo ?? false;
 
@@ -96,6 +150,10 @@ Examples:
 	console.log(`Model: ${modelName}`);
 	console.log(`Workspace: ${ALLOWED_PREFIX}`);
 	console.log(`Max Steps: ${maxSteps} steps (--maxSteps)`);
+	console.log(`Context Limit: ${contextLimit} characters (--contextLimit)`);
+	console.log(
+		`Tool Content Limit: ${toolContentLimit} characters (--toolContentLimit)`,
+	);
 	if (verbose) {
 		console.log(`Debug Logs: ${verbose ? "ON" : "OFF"} (--verbose)`);
 	}
@@ -124,20 +182,16 @@ Examples:
 					return true;
 				}
 			: undefined,
+		contextCharacterLimit: contextLimit,
+		toolContentCharacterLimit: toolContentLimit,
 	});
 
 	try {
 		await agent.generate(userPrompt);
 	} catch (error) {
-		if (isErrorWithMessage(error)) {
-			let message = error.message;
-			if (apiKey) {
-				// To mask the API key string
-				message = message.split(apiKey).join("<YOUR_API_KEY>");
-			}
-			console.error(`\nError: The agent was unexpectedly failed.\n`);
-			console.error(`${message}`);
-		}
+		cliErrorHandlerStrategies
+			.find((s) => s.canHandle(error))
+			?.handle(error, apiKey, "<YOUR_API_KEY>");
 		process.exit(1);
 	}
 }

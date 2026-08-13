@@ -223,7 +223,7 @@ async function execCommandExecute(
 	return new Promise((resolve, reject) => {
 		const child = spawn(commandName, commandArgs, {
 			cwd: WORKSPACE_ROOT,
-			timeout: 30000, // 30 seconds (30,000 milliseconds)
+			timeout: 30_000, // 30 seconds (30,000 milliseconds)
 			shell: false, // To prevent command injection
 		});
 

@@ -8,7 +8,7 @@ import type {
 import { requestApproval } from "./approval";
 import { generateText } from "./generate-text";
 
-export interface AgentConfig {
+interface AgentConfig {
 	name: string;
 	instructions: string;
 	model: LanguageModel;
@@ -19,17 +19,8 @@ export interface AgentConfig {
 		toolName: string,
 		args: Record<string, unknown>,
 	) => Promise<boolean>;
-}
-
-async function executeTool(
-	tool: Tool,
-	args: Record<string, unknown>,
-): Promise<string> {
-	try {
-		return await tool.execute(args);
-	} catch (error) {
-		return `An error occurred during the tool execution: ${error instanceof Error ? error.message : String(error)}`;
-	}
+	contextCharacterLimit?: number;
+	toolContentCharacterLimit?: number;
 }
 
 export class Agent {
@@ -43,6 +34,8 @@ export class Agent {
 		toolName: string,
 		args: Record<string, unknown>,
 	) => Promise<boolean>;
+	private contextCharacterLimit: number;
+	private toolContentCharacterLimit: number;
 
 	constructor(config: AgentConfig) {
 		this.name = config.name;
@@ -52,9 +45,22 @@ export class Agent {
 		this.maxSteps = config.maxSteps ?? 10;
 		this.verbose = config.verbose ?? false;
 		this.approvalFunc = config.approvalFunc ?? requestApproval; // default: dialogic approval via CLI
+		this.contextCharacterLimit = config.contextCharacterLimit ?? 30_000;
+		this.toolContentCharacterLimit = config.toolContentCharacterLimit ?? 200;
 
 		if (this.verbose) {
 			console.log(`\nAgent '${this.name}' successfully constructed.`);
+		}
+	}
+
+	private async executeTool(
+		tool: Tool,
+		args: Record<string, unknown>,
+	): Promise<string> {
+		try {
+			return await tool.execute(args);
+		} catch (error) {
+			return `An error occurred during the tool execution: ${error instanceof Error ? error.message : String(error)}`;
 		}
 	}
 
@@ -103,7 +109,7 @@ export class Agent {
 				}
 			}
 
-			const toolExecutionResult = await executeTool(tool, toolCall.args);
+			const toolExecutionResult = await this.executeTool(tool, toolCall.args);
 			toolCallCounts++;
 
 			if (this.verbose) {
@@ -125,8 +131,78 @@ export class Agent {
 		};
 	}
 
+	private removeToolMessagesWith(
+		removedMessage: Message,
+		fromTargetMessages: Message[],
+	): number {
+		let removedLength = removedMessage.content.length;
+		if (removedMessage.role === "assistant") {
+			while (
+				fromTargetMessages.length > 0 &&
+				fromTargetMessages[0]?.role === "tool"
+			) {
+				const removedToolMessage = fromTargetMessages.shift();
+				if (removedToolMessage) {
+					removedLength += removedToolMessage.content.length;
+				}
+			}
+		}
+		return removedLength;
+	}
+
+	private manageContext(messages: Message[]): Message[] {
+		if (messages.length < 10) {
+			return messages;
+		}
+
+		const totalLength = messages.reduce((sum, m) => sum + m.content.length, 0);
+		if (totalLength < this.contextCharacterLimit) {
+			return messages;
+		}
+		console.log(
+			`\nCompress the chat history to optimize the LLM's context. (As is: ${totalLength} characters)`,
+		);
+
+		const initialMessages = messages.slice(0, 2); // system message with user message
+		const recentMessages = messages.slice(-4);
+		const middleMessages = messages.slice(2, -4).map((message) => {
+			if (
+				message.role === "tool" &&
+				message.content.length > this.toolContentCharacterLimit
+			) {
+				return {
+					...message,
+					content: `(The result of previous tool execution have been omitted: ${message.content.length} characters)`,
+				};
+			}
+			return message;
+		});
+
+		let compressedTotalLength =
+			initialMessages.reduce((sum, m) => sum + m.content.length, 0) +
+			middleMessages.reduce((sum, m) => sum + m.content.length, 0) +
+			recentMessages.reduce((sum, m) => sum + m.content.length, 0);
+
+		while (
+			compressedTotalLength > this.contextCharacterLimit &&
+			middleMessages.length > 0
+		) {
+			const removedMessage = middleMessages.shift();
+			if (removedMessage) {
+				compressedTotalLength -= this.removeToolMessagesWith(
+					removedMessage,
+					middleMessages,
+				);
+			}
+		}
+		console.log(
+			`\nSuccessfully optimized the LLM's context. (To be: ${compressedTotalLength} characters)\n`,
+		);
+		return [...initialMessages, ...middleMessages, ...recentMessages];
+	}
+
 	async generate(userPrompt: string): Promise<{ text: string }> {
-		const messages: Message[] = [
+		let messages: Message[] = [
 			{ role: "system", content: this.instructions },
 			{ role: "user", content: userPrompt },
 		];
@@ -141,6 +217,7 @@ export class Agent {
 			if (this.verbose) {
 				console.log(`\n=== Step ${currentStep}/${this.maxSteps} ===`);
 			}
+			messages = this.manageContext(messages);
 
 			const response = await generateText({
 				model: this.model,
