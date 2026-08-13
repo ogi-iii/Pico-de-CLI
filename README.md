@@ -19,6 +19,7 @@ Like [*Pico de Gallo*](https://es.wikipedia.org/wiki/Pico_de_gallo), finely chop
 
 - **Multi-Engine Fusion**: Seamlessly switch between Cloud LLMs (e.g., Gemini) and Local LLMs (e.g., Ollama / Qwen).
 - **Tool Integration**: Easily connect custom tools to execute complex developer workflows.
+- **Context Management**: Smart history compression and tool output truncation to prevent context window overflow.
 - **Lightweight & Fast**: Built for speed and simplicity, right inside your terminal.
 
 ## Requirements
@@ -91,6 +92,8 @@ bun run agent <YOUR_TASK_PROMPT> [options]
 | --- | --- | --- | --- | --- |
 | `--help` | `-h` | boolean | `false` | Show help message and exit |
 | `--maxSteps` | `-m` | number | `30` | Maximum execution steps for the agent |
+| `--contextLimit` | `-c` | number | `30000` | Character limit for overall chat context before compression |
+| `--toolContentLimit` | `-t` | number | `200` | Character limit for individual tool execution output in history before compression |
 | `--verbose` | `-v` | boolean | `false` | Enable verbose debug logging |
 | `--yolo` | `-y` | boolean | `false` | Automatically approve tool execution without asking |
 
@@ -99,13 +102,19 @@ bun run agent <YOUR_TASK_PROMPT> [options]
 **Basic Task Execution:**
 
 ```bash
-bun run agent "Create a simple HTTP server using Node.js"
+bun run agent "Create a simple HTTP server using Bun"
 ```
 
 **Run with Automatic Approval (YOLO Mode):**
 
 ```bash
 bun run agent "Refactor src/index.ts to improve readability" --yolo
+```
+
+**Set Custom Context & Tool Content Limits for Large Tasks:**
+
+```bash
+bun run agent "Analyze large repository log files" -c 50000 -t 500
 ```
 
 **Set Custom Max Steps with Verbose Logs:**
