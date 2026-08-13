@@ -74,6 +74,11 @@ describe("createGoogle", () => {
 
 		expect(mockGenerateContent).toHaveBeenCalledWith(
 			expect.objectContaining({
+				config: {
+					maxOutputTokens: undefined,
+					systemInstruction: undefined,
+					temperature: undefined,
+				},
 				contents: [
 					{
 						role: "model",
@@ -87,11 +92,14 @@ describe("createGoogle", () => {
 								functionCall: {
 									name: "searchWeb",
 									args: { query: "bun test" },
+									id: "call_123",
 								},
+								thoughtSignature: undefined,
 							},
 						],
 					},
 				],
+				model: "gemini-3.5-flash-lite",
 			}),
 		);
 	});
@@ -230,6 +238,7 @@ describe("createGoogle", () => {
 									name: "searchWeb",
 									args: { query: "bun test" },
 								},
+								thoughtSignature: "xxx",
 							},
 						],
 					},
@@ -253,6 +262,7 @@ describe("createGoogle", () => {
 				toolCallId: "call_0",
 				name: "searchWeb",
 				args: { query: "bun test" },
+				thoughtSignature: "xxx",
 			},
 		]);
 	});
