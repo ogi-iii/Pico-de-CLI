@@ -53,7 +53,7 @@ describe("createGoogle", () => {
 		const google = createGoogle({
 			apiKey: process.env.GEMINI_API_KEY as string,
 		});
-		const model = google(process.env.GEMINI_MODEL as string);
+		const model = google(process.env.GEMINI_MODEL as string ?? "gemini-3.5-flash-lite");
 
 		await model.doGenerate({
 			messages: [
