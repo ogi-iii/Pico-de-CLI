@@ -7,6 +7,46 @@ import { allTools } from "../src/tools/allTools";
 import { ALLOWED_PREFIX, WORKSPACE_ROOT } from "../src/tools/common/constants";
 import { isErrorWithMessage } from "../src/tools/common/error-handler";
 
+type CliErrorHandlerStrategy = {
+	canHandle: (error: unknown) => boolean;
+	handle: (
+		error: unknown,
+		maskedValue: string | undefined,
+		maskedLabel: string,
+	) => void;
+};
+
+const cliErrorHandlerStrategies: CliErrorHandlerStrategy[] = [
+	{
+		canHandle: (error) => isErrorWithMessage(error),
+		handle: (
+			error: unknown,
+			maskedValue: string | undefined,
+			maskedLabel: string,
+		) => {
+			let message = (error as Error).message;
+			if (maskedValue) {
+				message = message.split(maskedValue).join(`${maskedLabel}`);
+			}
+			console.error(`\nError: The agent unexpectedly failed.\n`);
+			console.error(`${message}`);
+		},
+	},
+	{
+		canHandle: (_error) => true,
+		handle: (
+			error: unknown,
+			_maskedValue: string | undefined,
+			_maskedLabel: string,
+		) => {
+			console.error(
+				`\nError: The agent failed with unexpected error.\n`,
+				error,
+			);
+		},
+	},
+];
+
 async function main() {
 	// ASCII Art Logo
 	console.log(
@@ -129,15 +169,9 @@ Examples:
 	try {
 		await agent.generate(userPrompt);
 	} catch (error) {
-		if (isErrorWithMessage(error)) {
-			let message = error.message;
-			if (apiKey) {
-				// To mask the API key string
-				message = message.split(apiKey).join("<YOUR_API_KEY>");
-			}
-			console.error(`\nError: The agent was unexpectedly failed.\n`);
-			console.error(`${message}`);
-		}
+		cliErrorHandlerStrategies
+			.find((s) => s.canHandle(error))
+			?.handle(error, apiKey, "<YOUR_API_KEY>");
 		process.exit(1);
 	}
 }
