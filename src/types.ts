@@ -10,6 +10,7 @@ export type ToolCall = {
 	toolCallId: string;
 	name: string;
 	args: Record<string, unknown>;
+	thoughtSignature?: string;
 };
 
 export type ToolResult = {
