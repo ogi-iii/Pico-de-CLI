@@ -1,8 +1,5 @@
 # AGENTS.md
 
-## Project Overview
-\<Your Project Overview>
-
 ## Testing
 - Framework: Vitest
 - Execution: `bun test`

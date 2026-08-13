@@ -34,7 +34,9 @@ const convertAssistantMessage = (m: AssistantMessage) => ({
 			functionCall: {
 				name: tc.name,
 				args: tc.args,
+				id: tc.toolCallId,
 			},
+			thoughtSignature: tc.thoughtSignature,
 		})) ?? []),
 	],
 });
@@ -119,9 +121,10 @@ export function createGoogle(config?: { apiKey?: string }): Provider {
 				const functionCallParts = parts.filter((p: Part) => p.functionCall);
 				const toolCalls: ToolCall[] | undefined = functionCallParts.length
 					? functionCallParts.map((p: Part, i: number) => ({
-							toolCallId: `call_${i}`,
+							toolCallId: p.functionCall?.id ?? `call_${i}`,
 							name: p.functionCall?.name ?? "",
 							args: (p.functionCall?.args as Record<string, unknown>) ?? {},
+							thoughtSignature: p.thoughtSignature ?? "",
 						}))
 					: undefined;
 
